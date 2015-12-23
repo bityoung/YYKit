@@ -130,6 +130,10 @@ static inline UIEdgeInsets UIEdgeInsetRotateVertical(UIEdgeInsets insets) {
     return one;
 }
 
+- (id)mutableCopyWithZone:(nullable NSZone *)zone {
+    return [self copyWithZone:zone];
+}
+
 - (void)encodeWithCoder:(NSCoder *)aCoder {
     [aCoder encodeObject:[NSValue valueWithCGSize:_size] forKey:@"size"];
     [aCoder encodeObject:[NSValue valueWithUIEdgeInsets:_insets] forKey:@"insets"];
@@ -549,7 +553,7 @@ OSSpinLockUnlock(&_lock);
         if (container.linePositionModifier) {
             [container.linePositionModifier modifyLines:lines fromText:text inContainer:container];
             textBoundingRect = CGRectZero;
-            for (NSUInteger i = 0; i < lineCount; i++) {
+            for (NSUInteger i = 0, max = lines.count; i < max; i++) {
                 YYTextLine *line = lines[i];
                 if (i == 0) textBoundingRect = line.bounds;
                 else textBoundingRect = CGRectUnion(textBoundingRect, line.bounds);
@@ -1344,7 +1348,7 @@ fail:
         return [YYTextPosition positionWithOffset:line.range.location affinity:behind ? YYTextAffinityBackward:YYTextAffinityForward];
     }
     
-    // detect weather the line is a linebreak token
+    // detect whether the line is a linebreak token
     if (line.range.length <= 2) {
         NSString *str = [_text.string substringWithRange:line.range];
         if (YYTextIsLinebreakString(str)) { // an empty line ("\r", "\n", "\r\n")
@@ -2276,6 +2280,8 @@ static void YYTextSetLinePatternInContext(YYTextLineStyle style, CGFloat width, 
 
 
 static void YYTextDrawBorderRects(CGContextRef context, CGSize size, YYTextBorder *border, NSArray *rects, BOOL isVertical) {
+    if (rects.count == 0) return;
+    
     YYTextShadow *shadow = border.shadow;
     if (shadow.color) {
         CGContextSaveGState(context);
@@ -2663,7 +2669,7 @@ static void YYTextDrawBorder(YYTextLayout *layout, CGContextRef context, CGSize 
             }
             
             NSMutableArray *drawRects = [NSMutableArray new];
-            CGRect curRect= ((NSValue *)runRects[0]).CGRectValue;
+            CGRect curRect= ((NSValue *)[runRects firstObject]).CGRectValue;
             for (NSInteger re = 0, reMax = runRects.count; re < reMax; re++) {
                 CGRect rect = ((NSValue *)runRects[re]).CGRectValue;
                 if (isVertical) {

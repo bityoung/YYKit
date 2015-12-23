@@ -391,10 +391,13 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     CGSize newSize = self.bounds.size;
     if (!CGSizeEqualToSize(oldSize, newSize)) {
         _innerContainer.size = self.bounds.size;
+        if (!_ignoreCommonProperties) {
+            _state.layoutNeedUpdate = YES;
+        }
         if (_displaysAsynchronously && _clearContentsBeforeAsynchronouslyDisplay) {
             [self _clearContents];
         }
-        [self _setLayoutNeedUpdate];
+        [self _setLayoutNeedRedraw];
     }
 }
 
@@ -420,7 +423,11 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     self = [super initWithCoder:aDecoder];
     [self _initLabel];
     YYTextContainer *innerContainer = [aDecoder decodeObjectForKey:@"innerContainer"];
-    if (innerContainer) _innerContainer = innerContainer;
+    if (innerContainer) {
+        _innerContainer = innerContainer;
+    } else {
+        _innerContainer.size = self.bounds.size;
+    }
     [self _updateOuterContainerProperties];
     self.attributedText = [aDecoder decodeObjectForKey:@"attributedText"];
     [self _setLayoutNeedUpdate];
@@ -719,6 +726,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     } else {
         _innerText = [NSMutableAttributedString new];
     }
+    [_textParser parseText:_innerText selectedRange:NULL];
     if (!_ignoreCommonProperties) {
         if (_displaysAsynchronously && _clearContentsBeforeAsynchronouslyDisplay) {
             [self _clearContents];
